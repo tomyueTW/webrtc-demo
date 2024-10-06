@@ -1,6 +1,8 @@
 import logo from './logo.svg';
 import './App.css';
-import { useRef, useState, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
+import { db } from "./firebaseConfig";
+import { collection, addDoc, getDoc, doc } from "firebase/firestore";
 
 //使用 stream 更新 ref 
 export default function App() {
@@ -9,6 +11,7 @@ export default function App() {
   const remoteVideoRef = useRef(null);
   const localStream = useRef(null);
   const remoteStream = useRef(null);
+  const [roomInput, setRoomInput] = useState("");
 
   async function openMedia() {
     try {
@@ -31,6 +34,31 @@ export default function App() {
     }
   }
 
+  
+
+  async function createRoom() {
+    // 若沒有媒體則 return
+   if (!localStream.current) {
+      alert('請先開啟視訊及麥克風');
+      return;
+    }
+
+    // 創建房間，並 alert doc id
+    const roomRef = await addDoc(collection(db, "rooms"), {});
+    const roomId = roomRef.id;
+    console.log('createRoom', roomId);
+  }
+
+  // 新增 joinRoom
+	async function joinRoom(roomId) {
+
+		if (!localStream.current) return;
+
+	  const roomRef = doc(db, "rooms", roomId);
+	  const roomSnapshot = await getDoc(roomRef);
+    console.log('joinRoom', roomSnapshot);
+	}
+
   useEffect(() => {
     openMedia();
   }, []);
@@ -38,6 +66,16 @@ export default function App() {
   return (
     <div>
       <button onClick={openMedia}>Open Media</button>
+      <br />
+      <button onClick={createRoom}>createRoom</button>
+      <br />
+      <input
+      value={roomInput}
+      onChange={(e) => {
+        setRoomInput(e.target.value);
+	      }}
+	    />
+      <button onClick={() => joinRoom(roomInput)}>joinRoom</button>
       <br />
       {/* local 需要 muted */}
       <video ref={localVideoRef} autoPlay muted playsInline />
