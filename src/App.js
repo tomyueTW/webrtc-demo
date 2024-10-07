@@ -42,8 +42,6 @@ export default function App() {
     }
   }
 
-  
-
   async function createRoom() {
     // 若沒有媒體則 return
    if (!localStream.current) {
@@ -57,6 +55,9 @@ export default function App() {
     const roomRef = await addDoc(collection(db, "rooms"), {});
     const roomId = roomRef.id;
     console.log('createRoom', roomId);
+
+    // 收集 ice candidates
+    collectIceCandidates(roomRef, pc, "calleeCandidates", "callerCandidates")
 
     // 將 localStream 中的媒體加入至 pc 中
     localStream.current.getTracks().forEach((track) => {
@@ -88,7 +89,6 @@ export default function App() {
     
   }
 
-  // 新增 joinRoom
 	async function joinRoom(roomId) {
 
 		if (!localStream.current) return;
@@ -105,6 +105,9 @@ export default function App() {
 
     // 創建一個新的 RTCPeerConnection
     const pc = new RTCPeerConnection(configuration);
+
+    // 收集 ice candidates
+    collectIceCandidates(roomRef, pc, "callerCandidates", "calleeCandidates")
     
     localStream.current.getTracks().forEach((track) => {
       pc.addTrack(track, localStream.current);
@@ -128,6 +131,46 @@ export default function App() {
     };
     await updateDoc(roomRef, roomWithAnswer);
 	}
+
+  async function collectIceCandidates(
+    roomRef,
+    peerConnection,
+    localName,
+    remoteName
+  ) {
+    // callerCandidates 存儲本地 ICE 候選者
+    const candidatesCollection = collection(roomRef, localName);
+  
+    try {
+      // 當收集到一個本地 ICE 候選者時，將觸發這個事件
+      peerConnection.onicecandidate = async (event) => {
+        // 如果事件中存在候選者，則將其轉換為 JSON 對象並添加到 candidatesCollection 中
+        if (event.candidate) {
+          console.log(event);
+          await addDoc(candidatesCollection, event.candidate.toJSON());
+        }
+      };
+  
+      // 收集到一個本地 ICE 候選者時錯誤則觸發
+      peerConnection.onicecandidateerror = (error) => {
+        console.log("error", error);
+      };
+  
+      // 監聽 calleeCandidates 裡的每個 doc
+      const remoteCandidatesCollection = collection(roomRef, remoteName);
+      onSnapshot(remoteCandidatesCollection, (snapshot) => {
+        snapshot.docChanges().forEach(async (change) => {
+          if (change.type === "added") {
+            // 對於每個新增的遠程 ICE 候選者，將其轉換為 RTCIceCandidate
+            const data = change.doc.data();
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data));
+          }
+        });
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   useEffect(() => {
     openMedia();
