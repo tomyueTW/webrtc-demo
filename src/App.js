@@ -64,6 +64,19 @@ export default function App() {
       pc.addTrack(track, localStream.current);
     });
 
+    // 從事件中取得 streams
+    // 檢查是否已經存在 remoteStream，如果存在，將媒體軌道添加到其中
+    pc.ontrack = (event) => {
+      event.streams[0].getTracks().forEach((track) => {
+          remoteStream.current.addTrack(track);
+    });
+		
+		// 將 remoteVideoRef 的 srcObject 設定為 remoteStream
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream.current;
+      }
+    };
+
     // 1. 建立 offer 
     const offer = await pc.createOffer();
     const roomWithOffer = {
@@ -112,6 +125,15 @@ export default function App() {
     localStream.current.getTracks().forEach((track) => {
       pc.addTrack(track, localStream.current);
     });
+
+    pc.ontrack = (event) => {
+      event.streams[0].getTracks().forEach((track) => {
+        remoteStream.current.addTrack(track);
+      });
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream.current;
+      }
+    };
 
     // 3. 尋找 db 中的 offer
     // 4. offer 設定 RemoteDescription
