@@ -12,6 +12,7 @@ export default function App() {
   const localStream = useRef(null);
   const remoteStream = useRef(null);
   const [roomInput, setRoomInput] = useState("");
+  const [roomId, setRoomId] = useState("");
   const configuration = {
     iceServers: [
       {
@@ -53,7 +54,7 @@ export default function App() {
 
     // 創建房間，並 alert doc id
     const roomRef = await addDoc(collection(db, "rooms"), {});
-    const roomId = roomRef.id;
+    setRoomId(roomRef.id);
     console.log('createRoom', roomId);
 
     // 收集 ice candidates
@@ -202,7 +203,11 @@ export default function App() {
     <div>
       <button onClick={openMedia}>Open Media</button>
       <br />
+      <input value={roomId} onChange={(e) => {
+        setRoomId(e.target.value);
+	      }}/>
       <button onClick={createRoom}>createRoom</button>
+      <br />
       <br />
       <input
       value={roomInput}
