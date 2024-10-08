@@ -13,6 +13,7 @@ export default function App() {
   const remoteStream = useRef(null);
   const [roomInput, setRoomInput] = useState("");
   const [roomId, setRoomId] = useState("");
+  const [isCall, setIsCall] = useState(false);
   const [peerConnection, setPeerConnection] = useState(null);
   const configuration = {
     iceServers: [
