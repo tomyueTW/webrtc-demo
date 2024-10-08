@@ -277,8 +277,17 @@ export default function App() {
   }
 
   useEffect(() => {
-    openMedia();
-  }, []);
+    const handleBeforeUnload = (e) => {
+      if (isCall && roomId) {
+        e.preventDefault();
+        e.returnValue = '您確定要離開視訊通話嗎？未保存的更改可能會丟失。';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isCall, roomId]);
 
   return (
     <div>
