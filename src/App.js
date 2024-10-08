@@ -278,6 +278,7 @@ export default function App() {
   }
 
   useEffect(() => {
+    openMedia();
     const handleBeforeUnload = (e) => {
       if (isCall && roomId) {
         e.preventDefault();
