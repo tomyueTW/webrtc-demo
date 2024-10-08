@@ -2,7 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 import { useRef, useEffect, useState } from "react";
 import { db } from "./firebaseConfig";
-import { collection, addDoc, getDoc, doc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, getDoc, doc, setDoc, updateDoc, onSnapshot, getDocs, deleteDoc } from "firebase/firestore";
 
 //使用 stream 更新 ref 
 export default function App() {
@@ -13,6 +13,7 @@ export default function App() {
   const remoteStream = useRef(null);
   const [roomInput, setRoomInput] = useState("");
   const [roomId, setRoomId] = useState("");
+  const [peerConnection, setPeerConnection] = useState(null);
   const configuration = {
     iceServers: [
       {
@@ -235,6 +236,46 @@ export default function App() {
     }
   }
 
+  async function hangUp() {
+		// 停止本地流和遠端流中的所有媒體軌道
+    localStream.current?.getTracks().forEach((track) => track.stop());
+    remoteStream.current?.getTracks().forEach((track) => track.stop());
+
+		// 關閉 RTCPeerConnection
+    peerConnection?.close();
+    localVideoRef.current.srcObject = null;
+    remoteVideoRef.current.srcObject = null;
+    // 重置相關狀態和視訊元素
+    setVideoState({
+      isMuted: false,
+      isVideoDisabled: false,
+    });
+    setPeerConnection(null);
+    setRoomId('');
+    window.alert('通話已結束');
+
+    if (roomId !== '') {
+      const roomRef = doc(db, 'rooms', roomId);
+      console.log('roomSnapshot.exists()');
+      await updateDoc(roomRef, { callEnded: true });
+      const calleeCandidatesRef = collection(roomRef, 'calleeCandidates');
+      const callerCandidatesRef = collection(roomRef, 'callerCandidates');
+
+      // 刪除 calleeCandidates 集合中的文件
+      const calleeCandidatesQuery = await getDocs(calleeCandidatesRef);
+      calleeCandidatesQuery.forEach(async (candidate) => {
+        await deleteDoc(candidate.ref);
+      });
+      // 刪除 callerCandidates 集合中的文件
+      const callerCandidatesQuery = await getDocs(callerCandidatesRef);
+      callerCandidatesQuery.forEach(async (candidate) => {
+        await deleteDoc(candidate.ref);
+      });
+      // 刪除 rooms 集合中的文件
+      await deleteDoc(roomRef);
+    }
+  }
+
   useEffect(() => {
     openMedia();
   }, []);
@@ -262,6 +303,9 @@ export default function App() {
       </button>
       <button onClick={() => toggleVideo()}>
         {videoState.isVideoDisabled ? "開視訊" : "關視訊"}
+      </button>
+      <button onClick={() => hangUp()}>
+        掛電話
       </button>
       <br />
       <br />
