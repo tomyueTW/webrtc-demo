@@ -21,6 +21,10 @@ export default function App() {
     ],
     iceCandidatePoolSize: 10
   };
+  const [videoState, setVideoState] = useState({
+    isMuted: false,
+    isVideoDisabled: false,
+  });
 
   async function openMedia() {
     try {
@@ -195,6 +199,42 @@ export default function App() {
     }
   }
 
+  function toggleMute() {
+    if (!localStream.current) return;
+    // 獲取本地音訊軌道
+    const audioTracks = localStream.current.getAudioTracks();
+    console.log(audioTracks);
+		
+    if (audioTracks.length > 0) {
+      // 切換音訊軌道的靜音狀態
+      audioTracks[0].enabled = !audioTracks[0].enabled;
+
+      // 更新狀態
+      setVideoState((prevState) => ({
+        ...prevState,
+        isMuted: !audioTracks[0].enabled
+      }));
+    }
+  }
+
+  function toggleVideo() {
+    if (!localStream.current) return;
+    // 獲取本地視訊軌道
+    const videoTracks = localStream.current.getVideoTracks();
+    console.log(videoTracks);
+
+    if (videoTracks.length > 0) {
+      // 切換視訊軌道的啟用狀態
+      videoTracks[0].enabled = !videoTracks[0].enabled;
+
+      // 更新狀態
+      setVideoState((prevState) => ({
+        ...prevState,
+        isVideoDisabled: !videoTracks[0].enabled
+      }));
+    }
+  }
+
   useEffect(() => {
     openMedia();
   }, []);
@@ -216,6 +256,14 @@ export default function App() {
 	      }}
 	    />
       <button onClick={() => joinRoom(roomInput)}>joinRoom</button>
+      <br />
+      <button onClick={() => toggleMute()}>
+        {videoState.isMuted ? "開音訊" : "關音訊"}
+      </button>
+      <button onClick={() => toggleVideo()}>
+        {videoState.isVideoDisabled ? "開視訊" : "關視訊"}
+      </button>
+      <br />
       <br />
       {/* local 需要 muted */}
       <video ref={localVideoRef} autoPlay muted playsInline />
