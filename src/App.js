@@ -283,6 +283,7 @@ export default function App() {
   return (
     <div>
       <button onClick={openMedia}>Open Media</button>
+      <button onClick={hangUp}>Close Media</button>
       <br />
       <input value={roomId} onChange={(e) => {
         setRoomId(e.target.value);
@@ -303,9 +304,6 @@ export default function App() {
       </button>
       <button onClick={() => toggleVideo()}>
         {videoState.isVideoDisabled ? "開視訊" : "關視訊"}
-      </button>
-      <button onClick={() => hangUp()}>
-        掛電話
       </button>
       <br />
       <br />
